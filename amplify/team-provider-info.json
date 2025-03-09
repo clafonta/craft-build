@@ -17,6 +17,9 @@
       },
       "api": {
         "craftbuild": {}
+      },
+      "storage": {
+        "s3fe042a19": {}
       }
     }
   }
