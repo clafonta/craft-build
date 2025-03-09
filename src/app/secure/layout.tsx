@@ -63,6 +63,9 @@ export default function SecureLayout({
               <Link href="/secure/companies" className="hover:underline">
                 Companies
               </Link>
+              <Link href="/secure/people" className="hover:underline">
+                People
+              </Link>
               <Link href="/secure/profile" className="hover:underline">
                 Profile
               </Link>

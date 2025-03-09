@@ -63,13 +63,14 @@ export async function confirmSignUp(username: string, code: string) {
 }
 
 // Resend confirmation code
+// Resend confirmation code
 export async function resendConfirmationCode(username: string) {
   try {
-    const { deliveryDetails, destination } = await resendSignUpCode({
+    const { destination } = await resendSignUpCode({
       username,
     })
 
-    return { deliveryDetails, destination }
+    return { destination }
   } catch (error) {
     console.error("Error resending confirmation code:", error)
     throw error
@@ -113,23 +114,14 @@ export async function getCurrentUser() {
   }
 }
 
-// Check if a user is authenticated
-export async function isAuthenticated() {
-  try {
-    await amplifyGetCurrentUser()
-    return true
-  } catch {
-    return false
-  }
-}
 
+// Update user attributes
 // Update user attributes
 export async function updateUserAttributes(attributes: Record<string, string>) {
   try {
-    const result = await amplifyUpdateUserAttributes({
+    return await amplifyUpdateUserAttributes({
       userAttributes: attributes,
     })
-    return result
   } catch (error) {
     console.error("Error updating user attributes:", error)
     throw error
@@ -150,12 +142,12 @@ export async function changePassword(oldPassword: string, newPassword: string) {
 }
 
 // Forgot password - request reset code
+// Forgot password - request reset code
 export async function forgotPassword(username: string) {
   try {
-    const { deliveryDetails, destination } = await resetPassword({
+    return await resetPassword({
       username,
     })
-    return { deliveryDetails, destination }
   } catch (error) {
     console.error("Error requesting password reset:", error)
     throw error
