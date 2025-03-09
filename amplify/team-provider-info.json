@@ -1,0 +1,20 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-craftbuild-dev-6fc7c-authRole",
+      "UnauthRoleArn": "arn:aws:iam::430118818822:role/amplify-craftbuild-dev-6fc7c-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::430118818822:role/amplify-craftbuild-dev-6fc7c-authRole",
+      "Region": "us-east-1",
+      "DeploymentBucketName": "amplify-craftbuild-dev-6fc7c-deployment",
+      "UnauthRoleName": "amplify-craftbuild-dev-6fc7c-unauthRole",
+      "StackName": "amplify-craftbuild-dev-6fc7c",
+      "StackId": "arn:aws:cloudformation:us-east-1:430118818822:stack/amplify-craftbuild-dev-6fc7c/5dd5bfb0-fd13-11ef-a2fe-0e63aa2e320d",
+      "AmplifyAppId": "d1rmjqj7kyjwak"
+    },
+    "categories": {
+      "auth": {
+        "craftbuildc6a75f9a": {}
+      }
+    }
+  }
+}
