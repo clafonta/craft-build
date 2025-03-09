@@ -1,0 +1,482 @@
+# Other system enums
+enum NotificationType {
+    SMS
+    EMAIL
+    BOTH
+}
+
+enum NotificationStatus {
+    ACTIVE
+    PAUSED
+}
+
+enum ChatStatus {
+    ACTIVE
+    ARCHIVED
+    SUSPENDED
+}
+
+enum ChatType {
+    PROJECT
+    CONTACT
+    SCOPE_ITEM
+    GENERAL
+}
+
+enum AnnotationType {
+    LINE
+    RECTANGLE
+    CIRCLE
+    TEXT
+    HIGHLIGHT
+    FREEFORM
+}
+
+# Company role enum
+enum CompanyRoleType {
+    COMPANY_ADMIN
+    COMPANY_USER
+}
+
+# Core types
+type Person
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: owner, operations: [update, read], ownerField: "cognitoUsername" }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    cognitoUsername: String @index
+    cognitoSub: String @index
+    firstName: String
+    lastName: String
+    email: AWSEmail! # Make this unique and indexed
+    status: String # ACTIVE, INVITED, PENDING
+    phone: AWSPhone
+    invitedAt: AWSDateTime
+    displayName: String
+    jobSkills: [String]
+    companyRoles: [PersonCompanyRole] @hasMany
+    companies: [Company] @manyToMany(relationName: "PersonCompanies")
+    projects: [Project] @manyToMany(relationName: "ProjectPeople")
+    uploadedFiles: [ProjectFile] @hasMany
+    chats: [GroupChat] @manyToMany(relationName: "ChatParticipants")
+    sentMessages: [GroupChatMessage] @hasMany
+    notes: String
+    timezone: String
+    language: String
+    lastActive: AWSDateTime
+}
+
+# New type to handle company-specific roles for each person
+type PersonCompanyRole
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    personID: ID! @index
+    person: Person! @belongsTo(fields: ["personID"])
+    companyID: ID! @index
+    company: Company! @belongsTo(fields: ["companyID"])
+    jobRoles: [CompanyRoleType]! # List of roles this person has in this specific company
+    isActive: Boolean!
+    startDate: AWSDateTime
+    endDate: AWSDateTime
+}
+
+type Company
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [read, update] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    website: AWSURL
+    people: [Person] @manyToMany(relationName: "PersonCompanies")
+    personRoles: [PersonCompanyRole] @hasMany
+    projects: [Project] @hasMany
+    projectTemplates: [ProjectTemplate] @hasMany
+    scopeItemTags: [ScopeItemTag] @hasMany
+    templateScopeItemTags: [TemplateScopeItemTag] @hasMany
+    chats: [GroupChat] @hasMany
+}
+
+# Project and Template types
+type ProjectTemplate
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    companyID: ID! @index
+    company: Company @belongsTo(fields: ["companyID"])
+    projects: [Project] @hasMany
+    scopeItems: [TemplateScopeItem] @hasMany
+    templateScopeItemTags: [TemplateScopeItemTag] @hasMany
+    estimatedDuration: Int
+    defaultAddress: Address @hasOne
+    notificationSettings: [Notification] @hasMany
+}
+
+type TemplateScopeItem
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    parentItemID: ID @index(name: "byParentTemplateItem")
+    parentItem: TemplateScopeItem @belongsTo(fields: ["parentItemID"])
+    childItems: [TemplateScopeItem] @hasMany(indexName: "byParentTemplateItem", fields: ["id"])
+    projectTemplateID: ID! @index
+    projectTemplate: ProjectTemplate @belongsTo(fields: ["projectTemplateID"])
+    tags: [String] # List of tag strings for filtering and searching
+}
+
+type Project
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    startDate: AWSDate
+    endDate: AWSDate
+    companyID: ID! @index
+    company: Company @belongsTo(fields: ["companyID"])
+    templateID: ID @index(name: "byTemplate")
+    template: ProjectTemplate @belongsTo(fields: ["templateID"])
+    people: [Person] @manyToMany(relationName: "ProjectPeople")
+    files: [ProjectFile] @hasMany
+    address: Address @hasOne
+    notifications: [Notification] @hasMany
+    chats: [GroupChat] @hasMany
+    scopeItems: [ScopeItem] @hasMany
+    scopeItemGroups: [ScopeItemGroup] @hasMany
+}
+
+# Scope related types
+type ScopeItemTag
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    companyID: ID! @index
+    company: Company @belongsTo(fields: ["companyID"])
+    color: String
+    createdAt: AWSDateTime
+    updatedAt: AWSDateTime
+}
+
+type TemplateScopeItemTag
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    companyID: ID! @index
+    company: Company @belongsTo(fields: ["companyID"])
+    projectTemplateID: ID! @index
+    projectTemplate: ProjectTemplate @belongsTo(fields: ["projectTemplateID"])
+    color: String
+    createdAt: AWSDateTime
+    updatedAt: AWSDateTime
+}
+
+type ScopeItemGroup
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    projectID: ID! @index
+    project: Project @belongsTo(fields: ["projectID"])
+    scopeItems: [ScopeItem] @hasMany
+}
+
+type ScopeItem
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    description: String
+    category: String
+    costEstimate: Float
+    spendEstimate: Float
+    durationEstimate: Int
+    isCompleted: Boolean
+    progress: Float
+    tags: [String] # List of tag strings for filtering and searching
+    parentItemID: ID @index(name: "byParentItem")
+    parentItem: ScopeItem @belongsTo(fields: ["parentItemID"])
+    childItems: [ScopeItem] @hasMany(indexName: "byParentItem", fields: ["id"])
+    projectID: ID! @index
+    project: Project @belongsTo(fields: ["projectID"])
+    groupID: ID @index
+    group: ScopeItemGroup @belongsTo(fields: ["groupID"])
+    chats: [GroupChat] @hasMany
+}
+
+# Location type
+type Address
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    street: String!
+    city: String!
+    state: String!
+    postalCode: String!
+    country: String!
+    projectID: ID @index
+    project: Project @belongsTo(fields: ["projectID"])
+}
+
+# File related types
+type S3Object {
+    bucket: String!
+    region: String!
+    key: String!
+    etag: String
+    versionId: String
+}
+
+type Tag
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    files: [ProjectFile] @manyToMany(relationName: "ProjectFileTag")
+}
+
+type ProjectFile
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    fileName: String!
+    fileType: String!
+    fileSize: Int!
+    description: String
+    uploadedByID: ID! @index(name: "byUploadedBy", sortKeyFields: ["uploadedAt"])
+    uploadedBy: Person @belongsTo(fields: ["uploadedByID"])
+    uploadedAt: AWSDateTime!
+    projectID: ID! @index(name: "byProject", sortKeyFields: ["uploadedAt"])
+    project: Project @belongsTo(fields: ["projectID"])
+    s3Object: S3Object!
+    isPublic: Boolean!
+    width: Int
+    height: Int
+    duration: Float
+    thumbnailKey: String
+    tags: [Tag] @manyToMany(relationName: "ProjectFileTag")
+    annotations: [Annotation] @hasMany
+}
+
+type Annotation
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    pageNumber: Int!
+    x: Float!
+    y: Float!
+    endX: Float
+    endY: Float
+    width: Float
+    height: Float
+    radius: Float
+    rotation: Float
+    strokeWidth: Float
+    strokeStyle: String
+    color: String!
+    type: AnnotationType!
+    text: String
+    projectFileID: ID! @index(name: "byProjectFile")
+    projectFile: ProjectFile! @belongsTo(fields: ["projectFileID"])
+    createdAt: AWSDateTime!
+    createdByID: ID! @index(name: "byCreator")
+    updatedAt: AWSDateTime
+    updatedByID: ID @index(name: "byUpdater")
+}
+
+# Notification types
+type NotificationSchedule {
+    date: AWSDate!
+    time: AWSTime!
+    isRecurring: Boolean!
+    frequency: String
+    interval: Int
+    daysOfWeek: [String]
+    endDate: AWSDate
+    runCount: Int
+    maxRuns: Int
+}
+
+type Notification
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    type: NotificationType!
+    messageTemplate: String!
+    status: NotificationStatus!
+    schedule: [NotificationSchedule]!
+    projectID: ID @index
+    project: Project @belongsTo(fields: ["projectID"])
+}
+
+# Chat related types
+type GroupChat
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    name: String!
+    chatType: ChatType!
+    messages: [GroupChatMessage] @hasMany
+    createdAt: AWSDateTime!
+    updatedAt: AWSDateTime!
+    status: ChatStatus!
+    isDeleted: Boolean!
+    messageLimit: Int
+    lastMessageAt: AWSDateTime
+    companyID: ID! @index
+    company: Company @belongsTo(fields: ["companyID"])
+    projectID: ID @index
+    project: Project @belongsTo(fields: ["projectID"])
+    scopeItemID: ID @index
+    scopeItem: ScopeItem @belongsTo(fields: ["scopeItemID"])
+    participants: [Person] @manyToMany(relationName: "ChatParticipants")
+}
+
+type GroupChatMessage
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: owner, operations: [create], ownerField: "senderID" }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    content: String!
+    chatID: ID! @index(name: "byChat", sortKeyFields: ["timestamp"])
+    chat: GroupChat! @belongsTo(fields: ["chatID"])
+    senderID: ID! @index
+    sender: Person! @belongsTo(fields: ["senderID"])
+    timestamp: AWSDateTime!
+    isEdited: Boolean!
+    editedAt: AWSDateTime
+    attachments: [ChatAttachment] @hasMany
+}
+
+type ChatAttachment
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: owner, operations: [create], ownerField: "messageID" }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    fileName: String!
+    fileType: String!
+    fileSize: Int!
+    s3Object: S3Object!
+    uploadedAt: AWSDateTime!
+    width: Int
+    height: Int
+    duration: Float
+    thumbnailKey: String
+    messageID: ID! @index
+    message: GroupChatMessage! @belongsTo(fields: ["messageID"])
+}

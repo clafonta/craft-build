@@ -14,6 +14,9 @@
     "categories": {
       "auth": {
         "craftbuildc6a75f9a": {}
+      },
+      "api": {
+        "craftbuild": {}
       }
     }
   }
