@@ -1,13 +1,13 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { confirmForgotPassword } from "@/lib/auth"
 
-export default function ResetPasswordPage() {
+// Create a separate component that uses useSearchParams
+function ResetPasswordForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState({
@@ -61,111 +61,135 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-3xl font-bold text-center mb-6">Password Reset Successful</h1>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+            <h1 className="text-3xl font-bold text-center mb-6">Password Reset Successful</h1>
 
-          <div className="bg-green-100 text-green-800 p-4 rounded mb-6">Your password has been reset successfully!</div>
+            <div className="bg-green-100 text-green-800 p-4 rounded mb-6">Your password has been reset successfully!</div>
 
-          <p className="mb-6 text-center">You will be redirected to the sign in page shortly.</p>
+            <p className="mb-6 text-center">You will be redirected to the sign in page shortly.</p>
 
-          <div className="flex justify-center">
-            <Link href="/auth/signin" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-              Sign In Now
-            </Link>
+            <div className="flex justify-center">
+              <Link href="/auth/signin" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                Sign In Now
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-6">Reset Password</h1>
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <h1 className="text-3xl font-bold text-center mb-6">Reset Password</h1>
 
-        {error && <div className="bg-red-100 text-red-800 p-4 rounded mb-6">{error}</div>}
+          {error && <div className="bg-red-100 text-red-800 p-4 rounded mb-6">{error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="username" className="block mb-2 font-medium">
-              Username or Email
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              required
-              className="w-full p-2 border rounded"
-            />
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="username" className="block mb-2 font-medium">
+                Username or Email
+              </label>
+              <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="code" className="block mb-2 font-medium">
+                Reset Code
+              </label>
+              <input
+                  type="text"
+                  id="code"
+                  name="code"
+                  value={formData.code}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="newPassword" className="block mb-2 font-medium">
+                New Password
+              </label>
+              <input
+                  type="password"
+                  id="newPassword"
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
+                  className="w-full p-2 border rounded"
+              />
+              <p className="text-sm text-gray-500 mt-1">Password must be at least 8 characters long</p>
+            </div>
+
+            <div className="mb-6">
+              <label htmlFor="confirmPassword" className="block mb-2 font-medium">
+                Confirm New Password
+              </label>
+              <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  minLength={8}
+                  className="w-full p-2 border rounded"
+              />
+            </div>
+
+            <button
+                type="submit"
+                className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:bg-blue-400"
+                disabled={isLoading}
+            >
+              {isLoading ? "Resetting Password..." : "Reset Password"}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <Link href="/auth/signin" className="text-blue-600 hover:underline">
+              Back to Sign In
+            </Link>
           </div>
-
-          <div className="mb-4">
-            <label htmlFor="code" className="block mb-2 font-medium">
-              Reset Code
-            </label>
-            <input
-              type="text"
-              id="code"
-              name="code"
-              value={formData.code}
-              onChange={handleChange}
-              required
-              className="w-full p-2 border rounded"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label htmlFor="newPassword" className="block mb-2 font-medium">
-              New Password
-            </label>
-            <input
-              type="password"
-              id="newPassword"
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              required
-              minLength={8}
-              className="w-full p-2 border rounded"
-            />
-            <p className="text-sm text-gray-500 mt-1">Password must be at least 8 characters long</p>
-          </div>
-
-          <div className="mb-6">
-            <label htmlFor="confirmPassword" className="block mb-2 font-medium">
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              minLength={8}
-              className="w-full p-2 border rounded"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:bg-blue-400"
-            disabled={isLoading}
-          >
-            {isLoading ? "Resetting Password..." : "Reset Password"}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <Link href="/auth/signin" className="text-blue-600 hover:underline">
-            Back to Sign In
-          </Link>
         </div>
       </div>
-    </div>
   )
 }
 
+// Fallback component while the form is loading
+function FormLoadingFallback() {
+  return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+          <h1 className="text-3xl font-bold text-center mb-6">Reset Password</h1>
+          <div className="flex justify-center">
+            <div className="animate-pulse text-center">
+              <p>Loading form...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+  )
+}
+
+// Main component with Suspense boundary
+export default function ResetPasswordPage() {
+  return (
+      <Suspense fallback={<FormLoadingFallback />}>
+        <ResetPasswordForm />
+      </Suspense>
+  )
+}

@@ -30,11 +30,16 @@ interface Person {
     jobSkills?: Array<string | null> | null
 }
 
+// Updated interface to match the API response
 interface PersonCompany {
     id: string
     personId: string
     companyId: string
-    person: Person
+    person?: Person  // Make this optional since it's not included in the API response
+    __typename?: string
+    createdAt?: string
+    updatedAt?: string
+    cognitoUsername?: string | null
 }
 
 export default function CompanyPeoplePage() {
@@ -67,16 +72,29 @@ export default function CompanyPeoplePage() {
                 setUserData(user)
             } catch (error) {
                 console.error("Error fetching user data", error)
+                setError("Failed to authenticate user. Please try logging in again.")
             }
         }
 
-        fetchUserData()
+        // Call the async function and handle any errors
+        fetchUserData().catch(error => {
+            console.error("Unhandled error in fetchUserData:", error);
+            setError("An unexpected error occurred. Please refresh and try again.");
+        });
     }, [])
 
     useEffect(() => {
         if (userData && client && companyId) {
-            fetchCompanyData()
-            fetchPeopleData()
+            const fetchData = async () => {
+                await fetchCompanyData();
+                await fetchPeopleData();
+            };
+
+            // Call the async function and handle any errors
+            fetchData().catch(error => {
+                console.error("Error in data fetching:", error);
+                setError("Failed to load data. Please try again.");
+            });
         }
     }, [userData, client, companyId])
 
@@ -87,7 +105,8 @@ export default function CompanyPeoplePage() {
             // Ensure user is authenticated before making API calls
             const currentUser = await getCurrentUser()
             if (!currentUser) {
-                throw new Error("User not authenticated")
+                setError("User not authenticated")
+                return
             }
 
             const response = (await client.graphql({
@@ -117,7 +136,8 @@ export default function CompanyPeoplePage() {
             // Ensure user is authenticated before making API calls
             const currentUser = await getCurrentUser()
             if (!currentUser) {
-                throw new Error("User not authenticated")
+                setError("User not authenticated")
+                return
             }
 
             // Fetch all people
@@ -138,15 +158,18 @@ export default function CompanyPeoplePage() {
             })) as { data: APITypes.ListPersonCompaniesQuery }
 
             const personCompanyItems = personCompaniesResponse.data.listPersonCompanies?.items || []
-            setPersonCompanies(personCompanyItems as PersonCompany[])
+
+            // Fixed: Cast with type assertion after filtering null values
+            const filteredItems = personCompanyItems.filter(item => item !== null) as PersonCompany[]
+            setPersonCompanies(filteredItems)
 
             // Get IDs of people already associated with this company
-            const associatedPersonIds = personCompanyItems.map((item) => item.personId)
+            const associatedPersonIds = filteredItems.map((item) => item.personId)
 
             // Filter people into those associated with the company and those not
-            const companyPeopleData = allPeople.filter((person) => associatedPersonIds.includes(person.id))
+            const companyPeopleData = allPeople.filter((person) => person && associatedPersonIds.includes(person.id))
 
-            const otherPeopleData = allPeople.filter((person) => !associatedPersonIds.includes(person.id))
+            const otherPeopleData = allPeople.filter((person) => person && !associatedPersonIds.includes(person.id))
 
             setCompanyPeople(companyPeopleData as Person[])
             setAvailablePeople(otherPeopleData as Person[])
@@ -175,7 +198,7 @@ export default function CompanyPeoplePage() {
             })
 
             // Refresh data
-            fetchPeopleData()
+            await fetchPeopleData()
             setSelectedPersonId("")
         } catch (err) {
             console.error("Error adding person to company:", err)
@@ -198,7 +221,8 @@ export default function CompanyPeoplePage() {
             const relationshipToDelete = personCompanies.find((pc) => pc.personId === personId && pc.companyId === companyId)
 
             if (!relationshipToDelete) {
-                throw new Error("Relationship not found")
+                setError("Relationship not found")
+                return
             }
 
             await client.graphql({
@@ -211,7 +235,7 @@ export default function CompanyPeoplePage() {
             })
 
             // Refresh data
-            fetchPeopleData()
+            await fetchPeopleData()
         } catch (err) {
             console.error("Error removing person from company:", err)
             setError("Failed to remove person from company. Please try again.")
@@ -381,4 +405,3 @@ export default function CompanyPeoplePage() {
         </div>
     )
 }
-
