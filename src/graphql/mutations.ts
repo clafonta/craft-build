@@ -36,6 +36,10 @@ export const createPerson = /* GraphQL */ `mutation CreatePerson(
       nextToken
       __typename
     }
+    projectMemberships {
+      nextToken
+      __typename
+    }
     uploadedFiles {
       nextToken
       __typename
@@ -89,6 +93,10 @@ export const updatePerson = /* GraphQL */ `mutation UpdatePerson(
       nextToken
       __typename
     }
+    projectMemberships {
+      nextToken
+      __typename
+    }
     uploadedFiles {
       nextToken
       __typename
@@ -139,6 +147,10 @@ export const deletePerson = /* GraphQL */ `mutation DeletePerson(
       __typename
     }
     projects {
+      nextToken
+      __typename
+    }
+    projectMemberships {
       nextToken
       __typename
     }
@@ -773,6 +785,180 @@ export const deleteTemplateScopeItem = /* GraphQL */ `mutation DeleteTemplateSco
   APITypes.DeleteTemplateScopeItemMutationVariables,
   APITypes.DeleteTemplateScopeItemMutation
 >;
+export const createProjectMembership = /* GraphQL */ `mutation CreateProjectMembership(
+  $input: CreateProjectMembershipInput!
+  $condition: ModelProjectMembershipConditionInput
+) {
+  createProjectMembership(input: $input, condition: $condition) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.CreateProjectMembershipMutationVariables,
+  APITypes.CreateProjectMembershipMutation
+>;
+export const updateProjectMembership = /* GraphQL */ `mutation UpdateProjectMembership(
+  $input: UpdateProjectMembershipInput!
+  $condition: ModelProjectMembershipConditionInput
+) {
+  updateProjectMembership(input: $input, condition: $condition) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.UpdateProjectMembershipMutationVariables,
+  APITypes.UpdateProjectMembershipMutation
+>;
+export const deleteProjectMembership = /* GraphQL */ `mutation DeleteProjectMembership(
+  $input: DeleteProjectMembershipInput!
+  $condition: ModelProjectMembershipConditionInput
+) {
+  deleteProjectMembership(input: $input, condition: $condition) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedMutation<
+  APITypes.DeleteProjectMembershipMutationVariables,
+  APITypes.DeleteProjectMembershipMutation
+>;
 export const createProject = /* GraphQL */ `mutation CreateProject(
   $input: CreateProjectInput!
   $condition: ModelProjectConditionInput
@@ -806,6 +992,10 @@ export const createProject = /* GraphQL */ `mutation CreateProject(
       __typename
     }
     people {
+      nextToken
+      __typename
+    }
+    memberships {
       nextToken
       __typename
     }
@@ -889,6 +1079,10 @@ export const updateProject = /* GraphQL */ `mutation UpdateProject(
       nextToken
       __typename
     }
+    memberships {
+      nextToken
+      __typename
+    }
     files {
       nextToken
       __typename
@@ -966,6 +1160,10 @@ export const deleteProject = /* GraphQL */ `mutation DeleteProject(
       __typename
     }
     people {
+      nextToken
+      __typename
+    }
+    memberships {
       nextToken
       __typename
     }

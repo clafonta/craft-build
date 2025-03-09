@@ -63,6 +63,7 @@ type Person
     companyRoles: [PersonCompanyRole] @hasMany
     companies: [Company] @manyToMany(relationName: "PersonCompanies")
     projects: [Project] @manyToMany(relationName: "ProjectPeople")
+    projectMemberships: [ProjectMembership] @hasMany
     uploadedFiles: [ProjectFile] @hasMany
     chats: [GroupChat] @manyToMany(relationName: "ChatParticipants")
     sentMessages: [GroupChatMessage] @hasMany
@@ -157,6 +158,27 @@ type TemplateScopeItem
     tags: [String] # List of tag strings for filtering and searching
 }
 
+# New type to handle project-specific roles for each person
+type ProjectMembership
+@model
+@auth(
+    rules: [
+        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
+        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
+        { allow: private, operations: [read] }
+    ]
+) {
+    id: ID! @primaryKey
+    projectID: ID! @index
+    project: Project! @belongsTo(fields: ["projectID"])
+    personID: ID! @index
+    person: Person! @belongsTo(fields: ["personID"])
+    roles: [String]! # e.g. ["client", "designer", "architect", "project manager"]
+    isActive: Boolean!
+    startDate: AWSDateTime
+    endDate: AWSDateTime
+}
+
 type Project
 @model
 @auth(
@@ -176,6 +198,7 @@ type Project
     templateID: ID @index(name: "byTemplate")
     template: ProjectTemplate @belongsTo(fields: ["templateID"])
     people: [Person] @manyToMany(relationName: "ProjectPeople")
+    memberships: [ProjectMembership] @hasMany
     files: [ProjectFile] @hasMany
     address: Address @hasOne
     notifications: [Notification] @hasMany

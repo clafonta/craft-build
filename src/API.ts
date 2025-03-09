@@ -98,6 +98,7 @@ export type Person = {
   companyRoles?: ModelPersonCompanyRoleConnection | null,
   companies?: ModelPersonCompaniesConnection | null,
   projects?: ModelProjectPeopleConnection | null,
+  projectMemberships?: ModelProjectMembershipConnection | null,
   uploadedFiles?: ModelProjectFileConnection | null,
   chats?: ModelChatParticipantsConnection | null,
   sentMessages?: ModelGroupChatMessageConnection | null,
@@ -184,6 +185,7 @@ export type Project = {
   templateID?: string | null,
   template?: ProjectTemplate | null,
   people?: ModelProjectPeopleConnection | null,
+  memberships?: ModelProjectMembershipConnection | null,
   files?: ModelProjectFileConnection | null,
   address?: Address | null,
   notifications?: ModelNotificationConnection | null,
@@ -337,6 +339,29 @@ export type ProjectPeople = {
   createdAt: string,
   updatedAt: string,
   cognitoUsername?: string | null,
+};
+
+export type ModelProjectMembershipConnection = {
+  __typename: "ModelProjectMembershipConnection",
+  items:  Array<ProjectMembership | null >,
+  nextToken?: string | null,
+};
+
+export type ProjectMembership = {
+  __typename: "ProjectMembership",
+  id: string,
+  projectID: string,
+  project: Project,
+  personID: string,
+  person: Person,
+  roles: Array< string | null >,
+  isActive: boolean,
+  startDate?: string | null,
+  endDate?: string | null,
+  createdAt: string,
+  updatedAt: string,
+  personProjectMembershipsId?: string | null,
+  projectMembershipsId?: string | null,
 };
 
 export type ModelProjectFileConnection = {
@@ -847,6 +872,50 @@ export type UpdateTemplateScopeItemInput = {
 };
 
 export type DeleteTemplateScopeItemInput = {
+  id: string,
+};
+
+export type CreateProjectMembershipInput = {
+  id?: string | null,
+  projectID: string,
+  personID: string,
+  roles: Array< string | null >,
+  isActive: boolean,
+  startDate?: string | null,
+  endDate?: string | null,
+  personProjectMembershipsId?: string | null,
+  projectMembershipsId?: string | null,
+};
+
+export type ModelProjectMembershipConditionInput = {
+  projectID?: ModelIDInput | null,
+  personID?: ModelIDInput | null,
+  roles?: ModelStringInput | null,
+  isActive?: ModelBooleanInput | null,
+  startDate?: ModelStringInput | null,
+  endDate?: ModelStringInput | null,
+  and?: Array< ModelProjectMembershipConditionInput | null > | null,
+  or?: Array< ModelProjectMembershipConditionInput | null > | null,
+  not?: ModelProjectMembershipConditionInput | null,
+  createdAt?: ModelStringInput | null,
+  updatedAt?: ModelStringInput | null,
+  personProjectMembershipsId?: ModelIDInput | null,
+  projectMembershipsId?: ModelIDInput | null,
+};
+
+export type UpdateProjectMembershipInput = {
+  id: string,
+  projectID?: string | null,
+  personID?: string | null,
+  roles?: Array< string | null > | null,
+  isActive?: boolean | null,
+  startDate?: string | null,
+  endDate?: string | null,
+  personProjectMembershipsId?: string | null,
+  projectMembershipsId?: string | null,
+};
+
+export type DeleteProjectMembershipInput = {
   id: string,
 };
 
@@ -1737,6 +1806,23 @@ export type ModelTemplateScopeItemFilterInput = {
   projectTemplateScopeItemsId?: ModelIDInput | null,
 };
 
+export type ModelProjectMembershipFilterInput = {
+  id?: ModelIDInput | null,
+  projectID?: ModelIDInput | null,
+  personID?: ModelIDInput | null,
+  roles?: ModelStringInput | null,
+  isActive?: ModelBooleanInput | null,
+  startDate?: ModelStringInput | null,
+  endDate?: ModelStringInput | null,
+  createdAt?: ModelStringInput | null,
+  updatedAt?: ModelStringInput | null,
+  and?: Array< ModelProjectMembershipFilterInput | null > | null,
+  or?: Array< ModelProjectMembershipFilterInput | null > | null,
+  not?: ModelProjectMembershipFilterInput | null,
+  personProjectMembershipsId?: ModelIDInput | null,
+  projectMembershipsId?: ModelIDInput | null,
+};
+
 export type ModelProjectFilterInput = {
   id?: ModelIDInput | null,
   name?: ModelStringInput | null,
@@ -2057,6 +2143,7 @@ export type ModelSubscriptionPersonFilterInput = {
   and?: Array< ModelSubscriptionPersonFilterInput | null > | null,
   or?: Array< ModelSubscriptionPersonFilterInput | null > | null,
   personCompanyRolesId?: ModelSubscriptionIDInput | null,
+  personProjectMembershipsId?: ModelSubscriptionIDInput | null,
   personUploadedFilesId?: ModelSubscriptionIDInput | null,
   personSentMessagesId?: ModelSubscriptionIDInput | null,
   cognitoUsername?: ModelStringInput | null,
@@ -2169,6 +2256,20 @@ export type ModelSubscriptionTemplateScopeItemFilterInput = {
   or?: Array< ModelSubscriptionTemplateScopeItemFilterInput | null > | null,
 };
 
+export type ModelSubscriptionProjectMembershipFilterInput = {
+  id?: ModelSubscriptionIDInput | null,
+  projectID?: ModelSubscriptionIDInput | null,
+  personID?: ModelSubscriptionIDInput | null,
+  roles?: ModelSubscriptionStringInput | null,
+  isActive?: ModelSubscriptionBooleanInput | null,
+  startDate?: ModelSubscriptionStringInput | null,
+  endDate?: ModelSubscriptionStringInput | null,
+  createdAt?: ModelSubscriptionStringInput | null,
+  updatedAt?: ModelSubscriptionStringInput | null,
+  and?: Array< ModelSubscriptionProjectMembershipFilterInput | null > | null,
+  or?: Array< ModelSubscriptionProjectMembershipFilterInput | null > | null,
+};
+
 export type ModelSubscriptionProjectFilterInput = {
   id?: ModelSubscriptionIDInput | null,
   name?: ModelSubscriptionStringInput | null,
@@ -2181,6 +2282,7 @@ export type ModelSubscriptionProjectFilterInput = {
   updatedAt?: ModelSubscriptionStringInput | null,
   and?: Array< ModelSubscriptionProjectFilterInput | null > | null,
   or?: Array< ModelSubscriptionProjectFilterInput | null > | null,
+  projectMembershipsId?: ModelSubscriptionIDInput | null,
   projectFilesId?: ModelSubscriptionIDInput | null,
   projectNotificationsId?: ModelSubscriptionIDInput | null,
   projectChatsId?: ModelSubscriptionIDInput | null,
@@ -2464,6 +2566,10 @@ export type CreatePersonMutation = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     uploadedFiles?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -2516,6 +2622,10 @@ export type UpdatePersonMutation = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     uploadedFiles?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -2566,6 +2676,10 @@ export type DeletePersonMutation = {
     } | null,
     projects?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     uploadedFiles?:  {
@@ -3183,6 +3297,177 @@ export type DeleteTemplateScopeItemMutation = {
   } | null,
 };
 
+export type CreateProjectMembershipMutationVariables = {
+  input: CreateProjectMembershipInput,
+  condition?: ModelProjectMembershipConditionInput | null,
+};
+
+export type CreateProjectMembershipMutation = {
+  createProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
+export type UpdateProjectMembershipMutationVariables = {
+  input: UpdateProjectMembershipInput,
+  condition?: ModelProjectMembershipConditionInput | null,
+};
+
+export type UpdateProjectMembershipMutation = {
+  updateProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
+export type DeleteProjectMembershipMutationVariables = {
+  input: DeleteProjectMembershipInput,
+  condition?: ModelProjectMembershipConditionInput | null,
+};
+
+export type DeleteProjectMembershipMutation = {
+  deleteProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
 export type CreateProjectMutationVariables = {
   input: CreateProjectInput,
   condition?: ModelProjectConditionInput | null,
@@ -3220,6 +3505,10 @@ export type CreateProjectMutation = {
     } | null,
     people?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     files?:  {
@@ -3301,6 +3590,10 @@ export type UpdateProjectMutation = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     files?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -3378,6 +3671,10 @@ export type DeleteProjectMutation = {
     } | null,
     people?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     files?:  {
@@ -5850,6 +6147,10 @@ export type GetPersonQuery = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     uploadedFiles?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -6206,6 +6507,91 @@ export type ListTemplateScopeItemsQuery = {
   } | null,
 };
 
+export type GetProjectMembershipQueryVariables = {
+  id: string,
+};
+
+export type GetProjectMembershipQuery = {
+  getProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
+export type ListProjectMembershipsQueryVariables = {
+  id?: string | null,
+  filter?: ModelProjectMembershipFilterInput | null,
+  limit?: number | null,
+  nextToken?: string | null,
+  sortDirection?: ModelSortDirection | null,
+};
+
+export type ListProjectMembershipsQuery = {
+  listProjectMemberships?:  {
+    __typename: "ModelProjectMembershipConnection",
+    items:  Array< {
+      __typename: "ProjectMembership",
+      id: string,
+      projectID: string,
+      personID: string,
+      roles: Array< string | null >,
+      isActive: boolean,
+      startDate?: string | null,
+      endDate?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      personProjectMembershipsId?: string | null,
+      projectMembershipsId?: string | null,
+    } | null >,
+    nextToken?: string | null,
+  } | null,
+};
+
 export type GetProjectQueryVariables = {
   id: string,
 };
@@ -6242,6 +6628,10 @@ export type GetProjectQuery = {
     } | null,
     people?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     files?:  {
@@ -7751,6 +8141,64 @@ export type TemplateScopeItemsByProjectTemplateIDQuery = {
   } | null,
 };
 
+export type ProjectMembershipsByProjectIDQueryVariables = {
+  projectID: string,
+  sortDirection?: ModelSortDirection | null,
+  filter?: ModelProjectMembershipFilterInput | null,
+  limit?: number | null,
+  nextToken?: string | null,
+};
+
+export type ProjectMembershipsByProjectIDQuery = {
+  projectMembershipsByProjectID?:  {
+    __typename: "ModelProjectMembershipConnection",
+    items:  Array< {
+      __typename: "ProjectMembership",
+      id: string,
+      projectID: string,
+      personID: string,
+      roles: Array< string | null >,
+      isActive: boolean,
+      startDate?: string | null,
+      endDate?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      personProjectMembershipsId?: string | null,
+      projectMembershipsId?: string | null,
+    } | null >,
+    nextToken?: string | null,
+  } | null,
+};
+
+export type ProjectMembershipsByPersonIDQueryVariables = {
+  personID: string,
+  sortDirection?: ModelSortDirection | null,
+  filter?: ModelProjectMembershipFilterInput | null,
+  limit?: number | null,
+  nextToken?: string | null,
+};
+
+export type ProjectMembershipsByPersonIDQuery = {
+  projectMembershipsByPersonID?:  {
+    __typename: "ModelProjectMembershipConnection",
+    items:  Array< {
+      __typename: "ProjectMembership",
+      id: string,
+      projectID: string,
+      personID: string,
+      roles: Array< string | null >,
+      isActive: boolean,
+      startDate?: string | null,
+      endDate?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      personProjectMembershipsId?: string | null,
+      projectMembershipsId?: string | null,
+    } | null >,
+    nextToken?: string | null,
+  } | null,
+};
+
 export type ProjectsByCompanyIDQueryVariables = {
   companyID: string,
   sortDirection?: ModelSortDirection | null,
@@ -8676,6 +9124,10 @@ export type OnCreatePersonSubscription = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     uploadedFiles?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -8728,6 +9180,10 @@ export type OnUpdatePersonSubscription = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     uploadedFiles?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -8778,6 +9234,10 @@ export type OnDeletePersonSubscription = {
     } | null,
     projects?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    projectMemberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     uploadedFiles?:  {
@@ -9383,6 +9843,174 @@ export type OnDeleteTemplateScopeItemSubscription = {
   } | null,
 };
 
+export type OnCreateProjectMembershipSubscriptionVariables = {
+  filter?: ModelSubscriptionProjectMembershipFilterInput | null,
+};
+
+export type OnCreateProjectMembershipSubscription = {
+  onCreateProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
+export type OnUpdateProjectMembershipSubscriptionVariables = {
+  filter?: ModelSubscriptionProjectMembershipFilterInput | null,
+};
+
+export type OnUpdateProjectMembershipSubscription = {
+  onUpdateProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
+export type OnDeleteProjectMembershipSubscriptionVariables = {
+  filter?: ModelSubscriptionProjectMembershipFilterInput | null,
+};
+
+export type OnDeleteProjectMembershipSubscription = {
+  onDeleteProjectMembership?:  {
+    __typename: "ProjectMembership",
+    id: string,
+    projectID: string,
+    project:  {
+      __typename: "Project",
+      id: string,
+      name: string,
+      description?: string | null,
+      startDate?: string | null,
+      endDate?: string | null,
+      companyID: string,
+      templateID?: string | null,
+      createdAt: string,
+      updatedAt: string,
+      companyProjectsId?: string | null,
+      projectTemplateProjectsId?: string | null,
+      projectAddressId?: string | null,
+    },
+    personID: string,
+    person:  {
+      __typename: "Person",
+      id: string,
+      cognitoUsername?: string | null,
+      cognitoSub?: string | null,
+      firstName?: string | null,
+      lastName?: string | null,
+      email: string,
+      status?: string | null,
+      phone?: string | null,
+      invitedAt?: string | null,
+      displayName?: string | null,
+      jobSkills?: Array< string | null > | null,
+      notes?: string | null,
+      timezone?: string | null,
+      language?: string | null,
+      lastActive?: string | null,
+      createdAt: string,
+      updatedAt: string,
+    },
+    roles: Array< string | null >,
+    isActive: boolean,
+    startDate?: string | null,
+    endDate?: string | null,
+    createdAt: string,
+    updatedAt: string,
+    personProjectMembershipsId?: string | null,
+    projectMembershipsId?: string | null,
+  } | null,
+};
+
 export type OnCreateProjectSubscriptionVariables = {
   filter?: ModelSubscriptionProjectFilterInput | null,
 };
@@ -9419,6 +10047,10 @@ export type OnCreateProjectSubscription = {
     } | null,
     people?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     files?:  {
@@ -9499,6 +10131,10 @@ export type OnUpdateProjectSubscription = {
       __typename: "ModelProjectPeopleConnection",
       nextToken?: string | null,
     } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
+      nextToken?: string | null,
+    } | null,
     files?:  {
       __typename: "ModelProjectFileConnection",
       nextToken?: string | null,
@@ -9575,6 +10211,10 @@ export type OnDeleteProjectSubscription = {
     } | null,
     people?:  {
       __typename: "ModelProjectPeopleConnection",
+      nextToken?: string | null,
+    } | null,
+    memberships?:  {
+      __typename: "ModelProjectMembershipConnection",
       nextToken?: string | null,
     } | null,
     files?:  {

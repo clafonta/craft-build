@@ -36,6 +36,10 @@ export const onCreatePerson = /* GraphQL */ `subscription OnCreatePerson(
       nextToken
       __typename
     }
+    projectMemberships {
+      nextToken
+      __typename
+    }
     uploadedFiles {
       nextToken
       __typename
@@ -89,6 +93,10 @@ export const onUpdatePerson = /* GraphQL */ `subscription OnUpdatePerson(
       nextToken
       __typename
     }
+    projectMemberships {
+      nextToken
+      __typename
+    }
     uploadedFiles {
       nextToken
       __typename
@@ -139,6 +147,10 @@ export const onDeletePerson = /* GraphQL */ `subscription OnDeletePerson(
       __typename
     }
     projects {
+      nextToken
+      __typename
+    }
+    projectMemberships {
       nextToken
       __typename
     }
@@ -755,6 +767,177 @@ export const onDeleteTemplateScopeItem = /* GraphQL */ `subscription OnDeleteTem
   APITypes.OnDeleteTemplateScopeItemSubscriptionVariables,
   APITypes.OnDeleteTemplateScopeItemSubscription
 >;
+export const onCreateProjectMembership = /* GraphQL */ `subscription OnCreateProjectMembership(
+  $filter: ModelSubscriptionProjectMembershipFilterInput
+) {
+  onCreateProjectMembership(filter: $filter) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedSubscription<
+  APITypes.OnCreateProjectMembershipSubscriptionVariables,
+  APITypes.OnCreateProjectMembershipSubscription
+>;
+export const onUpdateProjectMembership = /* GraphQL */ `subscription OnUpdateProjectMembership(
+  $filter: ModelSubscriptionProjectMembershipFilterInput
+) {
+  onUpdateProjectMembership(filter: $filter) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedSubscription<
+  APITypes.OnUpdateProjectMembershipSubscriptionVariables,
+  APITypes.OnUpdateProjectMembershipSubscription
+>;
+export const onDeleteProjectMembership = /* GraphQL */ `subscription OnDeleteProjectMembership(
+  $filter: ModelSubscriptionProjectMembershipFilterInput
+) {
+  onDeleteProjectMembership(filter: $filter) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedSubscription<
+  APITypes.OnDeleteProjectMembershipSubscriptionVariables,
+  APITypes.OnDeleteProjectMembershipSubscription
+>;
 export const onCreateProject = /* GraphQL */ `subscription OnCreateProject($filter: ModelSubscriptionProjectFilterInput) {
   onCreateProject(filter: $filter) {
     id
@@ -785,6 +968,10 @@ export const onCreateProject = /* GraphQL */ `subscription OnCreateProject($filt
       __typename
     }
     people {
+      nextToken
+      __typename
+    }
+    memberships {
       nextToken
       __typename
     }
@@ -865,6 +1052,10 @@ export const onUpdateProject = /* GraphQL */ `subscription OnUpdateProject($filt
       nextToken
       __typename
     }
+    memberships {
+      nextToken
+      __typename
+    }
     files {
       nextToken
       __typename
@@ -939,6 +1130,10 @@ export const onDeleteProject = /* GraphQL */ `subscription OnDeleteProject($filt
       __typename
     }
     people {
+      nextToken
+      __typename
+    }
+    memberships {
       nextToken
       __typename
     }

@@ -33,6 +33,10 @@ export const getPerson = /* GraphQL */ `query GetPerson($id: ID!) {
       nextToken
       __typename
     }
+    projectMemberships {
+      nextToken
+      __typename
+    }
     uploadedFiles {
       nextToken
       __typename
@@ -421,6 +425,97 @@ export const listTemplateScopeItems = /* GraphQL */ `query ListTemplateScopeItem
   APITypes.ListTemplateScopeItemsQueryVariables,
   APITypes.ListTemplateScopeItemsQuery
 >;
+export const getProjectMembership = /* GraphQL */ `query GetProjectMembership($id: ID!) {
+  getProjectMembership(id: $id) {
+    id
+    projectID
+    project {
+      id
+      name
+      description
+      startDate
+      endDate
+      companyID
+      templateID
+      createdAt
+      updatedAt
+      companyProjectsId
+      projectTemplateProjectsId
+      projectAddressId
+      __typename
+    }
+    personID
+    person {
+      id
+      cognitoUsername
+      cognitoSub
+      firstName
+      lastName
+      email
+      status
+      phone
+      invitedAt
+      displayName
+      jobSkills
+      notes
+      timezone
+      language
+      lastActive
+      createdAt
+      updatedAt
+      __typename
+    }
+    roles
+    isActive
+    startDate
+    endDate
+    createdAt
+    updatedAt
+    personProjectMembershipsId
+    projectMembershipsId
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.GetProjectMembershipQueryVariables,
+  APITypes.GetProjectMembershipQuery
+>;
+export const listProjectMemberships = /* GraphQL */ `query ListProjectMemberships(
+  $id: ID
+  $filter: ModelProjectMembershipFilterInput
+  $limit: Int
+  $nextToken: String
+  $sortDirection: ModelSortDirection
+) {
+  listProjectMemberships(
+    id: $id
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+    sortDirection: $sortDirection
+  ) {
+    items {
+      id
+      projectID
+      personID
+      roles
+      isActive
+      startDate
+      endDate
+      createdAt
+      updatedAt
+      personProjectMembershipsId
+      projectMembershipsId
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ListProjectMembershipsQueryVariables,
+  APITypes.ListProjectMembershipsQuery
+>;
 export const getProject = /* GraphQL */ `query GetProject($id: ID!) {
   getProject(id: $id) {
     id
@@ -451,6 +546,10 @@ export const getProject = /* GraphQL */ `query GetProject($id: ID!) {
       __typename
     }
     people {
+      nextToken
+      __typename
+    }
+    memberships {
       nextToken
       __typename
     }
@@ -2086,6 +2185,78 @@ export const templateScopeItemsByProjectTemplateID = /* GraphQL */ `query Templa
 ` as GeneratedQuery<
   APITypes.TemplateScopeItemsByProjectTemplateIDQueryVariables,
   APITypes.TemplateScopeItemsByProjectTemplateIDQuery
+>;
+export const projectMembershipsByProjectID = /* GraphQL */ `query ProjectMembershipsByProjectID(
+  $projectID: ID!
+  $sortDirection: ModelSortDirection
+  $filter: ModelProjectMembershipFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  projectMembershipsByProjectID(
+    projectID: $projectID
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      projectID
+      personID
+      roles
+      isActive
+      startDate
+      endDate
+      createdAt
+      updatedAt
+      personProjectMembershipsId
+      projectMembershipsId
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ProjectMembershipsByProjectIDQueryVariables,
+  APITypes.ProjectMembershipsByProjectIDQuery
+>;
+export const projectMembershipsByPersonID = /* GraphQL */ `query ProjectMembershipsByPersonID(
+  $personID: ID!
+  $sortDirection: ModelSortDirection
+  $filter: ModelProjectMembershipFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  projectMembershipsByPersonID(
+    personID: $personID
+    sortDirection: $sortDirection
+    filter: $filter
+    limit: $limit
+    nextToken: $nextToken
+  ) {
+    items {
+      id
+      projectID
+      personID
+      roles
+      isActive
+      startDate
+      endDate
+      createdAt
+      updatedAt
+      personProjectMembershipsId
+      projectMembershipsId
+      __typename
+    }
+    nextToken
+    __typename
+  }
+}
+` as GeneratedQuery<
+  APITypes.ProjectMembershipsByPersonIDQueryVariables,
+  APITypes.ProjectMembershipsByPersonIDQuery
 >;
 export const projectsByCompanyID = /* GraphQL */ `query ProjectsByCompanyID(
   $companyID: ID!
