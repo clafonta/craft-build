@@ -49,12 +49,12 @@ export default function CompanyDetailPage() {
     }, [])
 
     useEffect(() => {
-        if (userData && client && params.id) {
-            fetchCompany(params.id as string)
+        if (userData && client && params.companyId) {
+            fetchCompany(params.companyId as string)
         }
-    }, [userData, client, params.id])
+    }, [userData, client, params.companyId])
 
-    async function fetchCompany(id: string) {
+    async function fetchCompany(companyId: string) {
         if (!client) return
 
         setLoading(true)
@@ -65,9 +65,10 @@ export default function CompanyDetailPage() {
                 throw new Error("User not authenticated")
             }
 
+            // Fix: Change variable name from companyId to id
             const response = (await client.graphql({
                 query: getCompany,
-                variables: { id },
+                variables: { id: companyId },
             })) as { data: APITypes.GetCompanyQuery }
 
             const companyData = response.data.getCompany
@@ -194,7 +195,7 @@ export default function CompanyDetailPage() {
                         <h3 className="text-xl font-semibold mb-3">Projects</h3>
                         <p className="text-gray-600 mb-4">Projects managed by this company</p>
                         <Link
-                            href={`/companies/${company.id}/projects`}
+                            href={`/secure/companies/${company.id}/projects`}
                             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-block"
                         >
                             View Projects
