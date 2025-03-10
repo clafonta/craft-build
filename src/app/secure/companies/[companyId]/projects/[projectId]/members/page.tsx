@@ -221,10 +221,30 @@ export default function ProjectMembersPage() {
                     projectID: item!.projectID,
                     roles: (item!.roles?.filter((r) => r !== null) as string[]) || ["MEMBER"],
                     isActive: item!.isActive || false,
-                    person: item!.person || null,
+                    // Use optional chaining to safely access personID instead of person
+                    // or fetch person data separately if needed
+                    person: {
+                        id: item!.personID,
+                        firstName: null,
+                        lastName: null,
+                        email: "loading@example.com", // Placeholder until we fetch the actual data
+                        displayName: null,
+                    },
                 }))
 
             setProjectMembers(memberData as ProjectMember[])
+
+            // Optionally fetch person details for each member if needed
+            // This depends on your API structure
+            for (const member of memberData) {
+                try {
+                    // You might need to implement this function to fetch person details
+                    // const personData = await fetchPersonDetails(member.personID);
+                    // Update the member with person data
+                } catch (err) {
+                    console.error(`Error fetching details for person ${member.personID}:`, err)
+                }
+            }
         } catch (err) {
             console.error("Error fetching project members:", err)
             throw new Error("Failed to fetch project members")

@@ -226,7 +226,7 @@ export default function ProjectDetailsPage() {
 
             const memberships = response.data.projectMembershipsByProjectID?.items || []
 
-            // Transform API response to match our ProjectMember interface
+            // Transform the API response without additional fetches
             const memberData = memberships
                 .filter((item) => item !== null)
                 .map((item) => ({
@@ -235,10 +235,50 @@ export default function ProjectDetailsPage() {
                     projectID: item!.projectID,
                     roles: (item!.roles?.filter((r) => r !== null) as string[]) || ["MEMBER"],
                     isActive: item!.isActive || false,
-                    person: item!.person || null,
+                    // We'll create a placeholder person object with just an ID
+                    // and then use the API to fetch display info separately
+                    person: {
+                        id: item!.personID,
+                        email: '',
+                        displayName: null,
+                        firstName: null,
+                        lastName: null
+                    }
                 }))
 
             setProjectMembers(memberData as ProjectMember[])
+
+            // After setting initial data, fetch person details for each membership
+            // This avoids UMD global variable issues with Promise.all
+            for (const member of memberData) {
+                try {
+                    const personResponse = await client.graphql({
+                        query: `query GetPerson($id: ID!) {
+                          getPerson(id: $id) {
+                            id
+                            firstName
+                            lastName
+                            email
+                            displayName
+                          }
+                        }`,
+                        variables: { id: member.personID },
+                    });
+
+                    if (personResponse.data.getPerson) {
+                        // Update the specific member with person data
+                        setProjectMembers(prevMembers =>
+                            prevMembers.map(m =>
+                                m.id === member.id
+                                    ? {...m, person: personResponse.data.getPerson}
+                                    : m
+                            )
+                        );
+                    }
+                } catch (personErr) {
+                    console.error("Error fetching person data:", personErr);
+                }
+            }
         } catch (err) {
             console.error("Error fetching project members:", err)
             throw new Error("Failed to fetch project members")
