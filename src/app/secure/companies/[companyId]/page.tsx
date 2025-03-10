@@ -201,6 +201,17 @@ export default function CompanyDetailPage() {
                             View Projects
                         </Link>
                     </div>
+
+                    <div className="bg-white shadow-md rounded p-6">
+                        <h3 className="text-xl font-semibold mb-3">Scope Item Tags</h3>
+                        <p className="text-gray-600 mb-4">Manage scope item tags for this company</p>
+                        <Link
+                            href={`/secure/companies/${company.id}/scope-item-tags`}
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded inline-block"
+                        >
+                            Manage Tags
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
