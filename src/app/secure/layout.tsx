@@ -53,7 +53,7 @@ export default function SecureLayout({
       <header className="bg-green-600 text-white p-4">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="text-2xl font-bold">
-            My App
+            Craft Build
           </Link>
           <div className="flex items-center gap-4">
             <nav className="flex gap-4">
@@ -88,7 +88,7 @@ export default function SecureLayout({
       <main className="flex-grow container mx-auto p-4">{children}</main>
       <footer className="bg-gray-200 p-4">
         <div className="container mx-auto text-center">
-          <p>© {new Date().getFullYear()} My App. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} CraftBuild. All rights reserved.</p>
         </div>
       </footer>
     </div>

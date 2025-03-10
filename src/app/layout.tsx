@@ -17,8 +17,8 @@ const paytoneOne = Paytone_One({
 })
 
 export const metadata: Metadata = {
-  title: 'Next.js with Amplify Auth',
-  description: 'Next.js application with Amplify authentication',
+  title: 'Craft Build',
+  description: 'Build your plan. Craft your build.',
 }
 
 export default function RootLayout({
