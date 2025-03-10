@@ -111,7 +111,6 @@ type Company
     projects: [Project] @hasMany
     projectTemplates: [ProjectTemplate] @hasMany
     scopeItemTags: [ScopeItemTag] @hasMany
-    templateScopeItemTags: [TemplateScopeItemTag] @hasMany
     chats: [GroupChat] @hasMany
 }
 
@@ -130,13 +129,10 @@ type ProjectTemplate
     description: String
     companyID: ID! @index
     company: Company @belongsTo(fields: ["companyID"])
-    projects: [Project] @hasMany
     scopeItems: [TemplateScopeItem] @hasMany
-    templateScopeItemTags: [TemplateScopeItemTag] @hasMany
-    estimatedDuration: Int
-    defaultAddress: Address @hasOne
-    notificationSettings: [Notification] @hasMany
+    tags: [ScopeItemTag] @manyToMany(relationName: "ProjectTemplateTags")
 }
+
 
 type TemplateScopeItem
 @model
@@ -195,8 +191,6 @@ type Project
     endDate: AWSDate
     companyID: ID! @index
     company: Company @belongsTo(fields: ["companyID"])
-    templateID: ID @index(name: "byTemplate")
-    template: ProjectTemplate @belongsTo(fields: ["templateID"])
     people: [Person] @manyToMany(relationName: "ProjectPeople")
     memberships: [ProjectMembership] @hasMany
     files: [ProjectFile] @hasMany
@@ -222,27 +216,6 @@ type ScopeItemTag
     description: String
     companyID: ID! @index
     company: Company @belongsTo(fields: ["companyID"])
-    color: String
-    createdAt: AWSDateTime
-    updatedAt: AWSDateTime
-}
-
-type TemplateScopeItemTag
-@model
-@auth(
-    rules: [
-        { allow: groups, groups: ["CBSuperAdmin"], operations: [create, read, update, delete] }
-        { allow: groups, groups: ["CBUser"], operations: [create, read, update, delete] }
-        { allow: private, operations: [read] }
-    ]
-) {
-    id: ID! @primaryKey
-    name: String!
-    description: String
-    companyID: ID! @index
-    company: Company @belongsTo(fields: ["companyID"])
-    projectTemplateID: ID! @index
-    projectTemplate: ProjectTemplate @belongsTo(fields: ["projectTemplateID"])
     color: String
     createdAt: AWSDateTime
     updatedAt: AWSDateTime
