@@ -514,7 +514,7 @@ export default function ProjectDetailsPage() {
                 </div>
                 <div className="flex space-x-4">
                     <Link
-                        href={`/secure/companies/${companyId}/projects/${projectId}/scope`}
+                        href={`/secure/companies/${companyId}/projects/${projectId}/scope-item-groups`}
                         className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
                     >
                         Manage Scope Items
