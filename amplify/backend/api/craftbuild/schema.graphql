@@ -130,7 +130,6 @@ type ProjectTemplate
     companyID: ID! @index
     company: Company @belongsTo(fields: ["companyID"])
     scopeItems: [TemplateScopeItem] @hasMany
-    tags: [ScopeItemTag] @manyToMany(relationName: "ProjectTemplateTags")
 }
 
 
