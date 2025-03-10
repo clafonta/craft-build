@@ -75,7 +75,7 @@ export default function EditScopeItemPage() {
     const [scopeItem, setScopeItem] = useState<ScopeItem | null>(null)
     const [scopeItemGroups, setScopeItemGroups] = useState<ScopeItemGroup[]>([])
     const [availableTags, setAvailableTags] = useState<ScopeItemTag[]>([])
-    const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [selectedTagNames, setSelectedTagNames] = useState<string[]>([])
 
     // Form state
     const [formData, setFormData] = useState<ScopeItemFormData>({
@@ -143,14 +143,14 @@ export default function EditScopeItemPage() {
             // Fetch project data
             await fetchProjectData()
 
+            // Fetch available tags (do this before scope item to have tags ready)
+            await fetchAvailableTags()
+
             // Fetch scope item data
             await fetchScopeItemData()
 
             // Fetch scope item groups
             await fetchScopeItemGroups()
-
-            // Fetch available tags
-            await fetchAvailableTags()
         } catch (err) {
             console.error("Error fetching initial data:", err)
             setError("Failed to load data. Please try again.")
@@ -231,12 +231,12 @@ export default function EditScopeItemPage() {
                     costEstimate: itemData.costEstimate || null,
                     spendEstimate: itemData.spendEstimate || null,
                     durationEstimate: itemData.durationEstimate || null,
-                    tags: [], // We'll manage tags separately with selectedTags
+                    tags: [], // We'll manage tags separately with selectedTagNames
                 })
 
-                // Set selected tags if they exist
+                // Set selected tag names if they exist
                 if (filteredTags && filteredTags.length > 0) {
-                    setSelectedTags(filteredTags)
+                    setSelectedTagNames(filteredTags)
                 }
             }
         } catch (err) {
@@ -280,7 +280,7 @@ export default function EditScopeItemPage() {
 
     // Fetch available tags
     async function fetchAvailableTags() {
-        if (!client || !project) return
+        if (!client) return
 
         try {
             const response = (await client.graphql({
@@ -344,15 +344,17 @@ export default function EditScopeItemPage() {
         }
     }
 
-    // Handle tag toggle
-    function handleTagToggle(tagId: string) {
-        setSelectedTags((prev) => {
-            if (prev.includes(tagId)) {
-                return prev.filter((id) => id !== tagId)
+    // Handle tag toggle - now toggling by tag name instead of ID
+    function handleTagToggle(tag: ScopeItemTag) {
+        const tagName = tag.name;
+
+        setSelectedTagNames((prev) => {
+            if (prev.includes(tagName)) {
+                return prev.filter((name) => name !== tagName);
             } else {
-                return [...prev, tagId]
+                return [...prev, tagName];
             }
-        })
+        });
     }
 
     // Submit form to update a scope item
@@ -376,7 +378,7 @@ export default function EditScopeItemPage() {
                         costEstimate: formData.costEstimate,
                         spendEstimate: formData.spendEstimate,
                         durationEstimate: formData.durationEstimate,
-                        tags: selectedTags.length > 0 ? selectedTags : null,
+                        tags: selectedTagNames.length > 0 ? selectedTagNames : null,
                     },
                 },
             })) as { data: APITypes.UpdateScopeItemMutation }
@@ -614,13 +616,13 @@ export default function EditScopeItemPage() {
                                         {availableTags.map((tag) => (
                                             <Badge
                                                 key={tag.id}
-                                                variant={selectedTags.includes(tag.id) ? "default" : "outline"}
+                                                variant={selectedTagNames.includes(tag.name) ? "default" : "outline"}
                                                 className="cursor-pointer"
                                                 style={{
-                                                    backgroundColor: selectedTags.includes(tag.id) ? tag.color || undefined : undefined,
+                                                    backgroundColor: selectedTagNames.includes(tag.name) ? tag.color || undefined : undefined,
                                                     borderColor: tag.color || undefined,
                                                 }}
-                                                onClick={() => handleTagToggle(tag.id)}
+                                                onClick={() => handleTagToggle(tag)}
                                             >
                                                 {tag.name}
                                             </Badge>
@@ -657,4 +659,3 @@ export default function EditScopeItemPage() {
         </div>
     )
 }
-
