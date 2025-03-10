@@ -1,401 +1,426 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
-import { getCurrentUser } from "@/lib/auth"
+import React from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
 import { generateClient } from "@aws-amplify/api"
-import { getProject, getScopeItemGroup } from "@/graphql/queries"
-import { createScopeItem } from "@/graphql/mutations"
-import type * as APITypes from "@/API"
 import { Amplify } from "aws-amplify"
 import awsconfig from "@/aws-exports"
-import { ArrowLeft, Save } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+import { getProject, getScopeItemGroup, listScopeItemTags } from "@/graphql/queries"
+import { createScopeItem } from "@/graphql/mutations"
+import type { CreateScopeItemInput, ScopeItemTag } from "@/API"
 
-// Define interfaces for our data types
-interface Project {
-    id: string
-    name: string
-    description?: string | null
-    companyID: string
-}
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Loader2, ArrowLeft, Tag } from "lucide-react"
 
-interface ScopeItemGroup {
-    id: string
-    name: string
-    description?: string | null
-    projectID: string
-}
+// Form schema
+const formSchema = z.object({
+    name: z.string().min(2, {
+        message: "Name must be at least 2 characters.",
+    }),
+    description: z.string().optional(),
+    category: z.string().optional(),
+    costEstimate: z.coerce.number().optional(),
+    spendEstimate: z.coerce.number().optional(),
+    durationEstimate: z.coerce.number().optional(),
+    isCompleted: z.boolean().default(false),
+    progress: z.coerce.number().min(0).max(100).optional(),
+    tags: z.array(z.string()).optional(),
+})
 
-interface ScopeItemFormData {
-    name: string
-    description: string
-    category: string
-    isCompleted: boolean
-    progress: number
-}
+type FormValues = z.infer<typeof formSchema>
 
-export default function CreateScopeItemPage() {
-    const params = useParams()
+export default function CreateScopeItemPage({
+                                                params: paramsPromise,
+                                                searchParams: searchParamsPromise,
+                                            }: {
+    params: Promise<{ projectId: string }>
+    searchParams: Promise<{ groupId?: string }>
+}) {
+    const params = React.use(paramsPromise)
+    const searchParams = React.use(searchParamsPromise)
     const router = useRouter()
-    const searchParams = useSearchParams()
-    const companyId = params.companyId as string
-    const projectId = params.projectId as string
-    const groupId = searchParams.get("groupId")
+    const [loading, setLoading] = useState(true)
+    const [submitting, setSubmitting] = useState(false)
+    const [project, setProject] = useState<any>(null)
+    const [group, setGroup] = useState<any>(null)
+    const [availableTags, setAvailableTags] = useState<ScopeItemTag[]>([])
+    const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [client, setClient] = useState<any>(null)
+    const [error, setError] = useState<string | null>(null)
 
-    // Main state
-    const [project, setProject] = useState<Project | null>(null)
-    const [group, setGroup] = useState<ScopeItemGroup | null>(null)
-
-    // Form state
-    const [formData, setFormData] = useState<ScopeItemFormData>({
-        name: "",
-        description: "",
-        category: "",
-        isCompleted: false,
-        progress: 0,
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            name: "",
+            description: "",
+            category: "",
+            costEstimate: undefined,
+            spendEstimate: undefined,
+            durationEstimate: undefined,
+            isCompleted: false,
+            progress: 0,
+            tags: [],
+        },
     })
 
-    // UI state
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [actionLoading, setActionLoading] = useState(false)
-
-    // Amplify client
-    const [client, setClient] = useState<any>(null)
-    const [userData, setUserData] = useState<any>(null)
-
-    // Initialize Amplify
+    // Initialize Amplify and client
     useEffect(() => {
+        // Configure Amplify first
         Amplify.configure(awsconfig)
+        // Then generate the client
         setClient(generateClient())
     }, [])
 
-    // Fetch user data
+    // Fetch data after client is initialized
     useEffect(() => {
-        async function fetchUserData() {
+        if (!client || !params.projectId) return
+
+        const fetchData = async () => {
             try {
-                const user = await getCurrentUser()
-                setUserData(user)
-            } catch (error) {
-                console.error("Error fetching user data", error)
-                setError("Failed to authenticate user. Please try logging in again.")
+                // Ensure user is authenticated before making API calls
+                const currentUser = await getCurrentUser()
+                if (!currentUser) {
+                    throw new Error("User not authenticated")
+                }
+
+                // Fetch project data
+                const projectResult = await client.graphql({
+                    query: getProject,
+                    variables: { id: params.projectId },
+                })
+
+                if (projectResult.data?.getProject) {
+                    setProject(projectResult.data.getProject)
+
+                    // Fetch available tags for the company
+                    const tagsResult = await client.graphql({
+                        query: listScopeItemTags,
+                        variables: {
+                            filter: { companyID: { eq: projectResult.data.getProject.companyID } },
+                        },
+                    })
+
+                    if (tagsResult.data?.listScopeItemTags?.items) {
+                        setAvailableTags(tagsResult.data.listScopeItemTags.items as ScopeItemTag[])
+                    }
+                }
+
+                // If groupId is provided, fetch group data
+                if (searchParams.groupId) {
+                    const groupResult = await client.graphql({
+                        query: getScopeItemGroup,
+                        variables: { id: searchParams.groupId },
+                    })
+
+                    if (groupResult.data?.getScopeItemGroup) {
+                        setGroup(groupResult.data.getScopeItemGroup)
+                    }
+                }
+
+                setError(null)
+            } catch (err) {
+                console.error("Error fetching data:", err)
+                setError("Failed to fetch data. Please try again.")
+            } finally {
+                setLoading(false)
             }
         }
 
-        fetchUserData().catch((error) => {
-            console.error("Unhandled error in fetchUserData:", error)
-            setError("An unexpected error occurred. Please refresh and try again.")
-        })
-    }, [])
+        fetchData()
+    }, [client, params.projectId, searchParams.groupId])
 
-    // Fetch data when user and client are ready
-    useEffect(() => {
-        if (userData && client && projectId) {
-            fetchInitialData().catch((error) => {
-                console.error("Unhandled error in fetchInitialData:", error)
-                setError("Failed to load data. Please try again.")
-            })
-        }
-    }, [userData, client, projectId, groupId])
-
-    // Main data fetching function
-    async function fetchInitialData() {
-        setLoading(true)
-        setError(null)
-
-        try {
-            // Fetch project data
-            await fetchProjectData()
-
-            // Fetch group data if groupId is provided
-            if (groupId) {
-                await fetchGroupData()
-            }
-        } catch (err) {
-            console.error("Error fetching initial data:", err)
-            setError("Failed to load data. Please try again.")
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    // Fetch project details
-    async function fetchProjectData() {
+    const onSubmit = async (values: FormValues) => {
         if (!client) return
 
+        setSubmitting(true)
         try {
-            const response = (await client.graphql({
-                query: getProject,
-                variables: { id: projectId },
-            })) as { data: APITypes.GetProjectQuery }
-
-            const projectData = response.data.getProject
-            if (!projectData) {
-                setError("Project not found")
-                setProject(null)
-            } else {
-                setProject({
-                    id: projectData.id,
-                    name: projectData.name,
-                    description: projectData.description,
-                    companyID: projectData.companyID,
-                })
+            // Ensure user is authenticated before making API calls
+            const currentUser = await getCurrentUser()
+            if (!currentUser) {
+                throw new Error("User not authenticated")
             }
-        } catch (err) {
-            console.error("Error fetching project:", err)
-            throw new Error("Failed to fetch project details")
-        }
-    }
 
-    // Fetch group details
-    async function fetchGroupData() {
-        if (!client || !groupId) return
-
-        try {
-            const response = (await client.graphql({
-                query: getScopeItemGroup,
-                variables: { id: groupId },
-            })) as { data: APITypes.GetScopeItemGroupQuery }
-
-            const groupData = response.data.getScopeItemGroup
-            if (!groupData) {
-                setError("Scope item group not found")
-                setGroup(null)
-            } else {
-                setGroup({
-                    id: groupData.id,
-                    name: groupData.name,
-                    description: groupData.description,
-                    projectID: groupData.projectID,
-                })
+            // Prepare input for creating scope item
+            const input: CreateScopeItemInput = {
+                name: values.name,
+                description: values.description || null,
+                category: values.category || null,
+                costEstimate: values.costEstimate || null,
+                spendEstimate: values.spendEstimate || null,
+                durationEstimate: values.durationEstimate || null,
+                isCompleted: values.isCompleted,
+                progress: values.progress || 0,
+                tags: selectedTags.length > 0 ? selectedTags : null,
+                projectID: params.projectId,
+                groupID: searchParams.groupId || null,
+                projectScopeItemsId: params.projectId,
+                scopeItemGroupScopeItemsId: searchParams.groupId || null,
             }
-        } catch (err) {
-            console.error("Error fetching scope item group:", err)
-            throw new Error("Failed to fetch scope item group details")
-        }
-    }
 
-    // Handle form input changes
-    function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-        const { name, value, type } = e.target as HTMLInputElement
-
-        if (type === "checkbox") {
-            const checked = (e.target as HTMLInputElement).checked
-            setFormData((prev) => ({
-                ...prev,
-                [name]: checked,
-            }))
-        } else if (name === "progress") {
-            // Ensure progress is a number between 0 and 100
-            const progressValue = Math.min(Math.max(Number.parseInt(value) || 0, 0), 100)
-            setFormData((prev) => ({
-                ...prev,
-                [name]: progressValue,
-            }))
-        } else {
-            setFormData((prev) => ({
-                ...prev,
-                [name]: value,
-            }))
-        }
-    }
-
-    // Submit form to create a scope item
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault()
-        if (!client || !projectId) return
-
-        setActionLoading(true)
-        try {
-            const response = (await client.graphql({
+            // Create scope item
+            const result = await client.graphql({
                 query: createScopeItem,
-                variables: {
-                    input: {
-                        name: formData.name,
-                        description: formData.description || null,
-                        category: formData.category || null,
-                        isCompleted: formData.isCompleted,
-                        progress: formData.progress,
-                        projectID: projectId,
-                        groupID: groupId,
-                    },
-                },
-            })) as { data: APITypes.CreateScopeItemMutation }
+                variables: { input },
+            })
 
-            const newScopeItem = response.data.createScopeItem
-            if (newScopeItem) {
-                // Navigate back to the group details page if groupId is provided
-                if (groupId) {
-                    router.push(`/secure/companies/${companyId}/projects/${projectId}/scope-item-groups/${groupId}`)
+            if (result.data?.createScopeItem) {
+                // Get the company ID from the project data
+                const companyId = project?.companyID
+
+                if (companyId) {
+                    if (searchParams.groupId) {
+                        // If we have a group ID, redirect to the group page
+                        router.push(
+                            `/secure/companies/${companyId}/projects/${params.projectId}/scope-item-groups/${searchParams.groupId}`,
+                        )
+                    } else {
+                        // If no group ID, redirect to the project's scope items page
+                        router.push(`/secure/companies/${companyId}/projects/${params.projectId}/scope-items`)
+                    }
                 } else {
-                    // Navigate back to the project details page
-                    router.push(`/secure/companies/${companyId}/projects/${projectId}`)
+                    // Fallback if company ID is not available
+                    router.push(`/secure/projects/${params.projectId}/scope-items`)
                 }
             }
         } catch (err) {
             console.error("Error creating scope item:", err)
             setError("Failed to create scope item. Please try again.")
         } finally {
-            setActionLoading(false)
+            setSubmitting(false)
         }
     }
 
-    // Navigation
-    function handleBack() {
-        if (groupId) {
-            router.push(`/secure/companies/${companyId}/projects/${projectId}/scope-item-groups/${groupId}`)
-        } else {
-            router.push(`/secure/companies/${companyId}/projects/${projectId}`)
-        }
+    const handleTagToggle = (tagId: string) => {
+        setSelectedTags((prev) => {
+            if (prev.includes(tagId)) {
+                return prev.filter((id) => id !== tagId)
+            } else {
+                return [...prev, tagId]
+            }
+        })
     }
 
-    // Loading state
+    // Update form value when selectedTags changes
+    useEffect(() => {
+        form.setValue("tags", selectedTags)
+    }, [selectedTags, form])
+
     if (loading) {
         return (
-            <div className="container mx-auto px-4 py-8">
-                <div className="text-center py-4">Loading...</div>
+            <div className="flex items-center justify-center h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )
     }
 
-    // Error state
-    if (error && !project) {
+    if (error) {
         return (
             <div className="container mx-auto px-4 py-8">
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-4 rounded" role="alert">
                     <p>{error}</p>
                 </div>
-                <button onClick={handleBack} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                <Button variant="default" onClick={() => router.back()}>
                     Back
-                </button>
+                </Button>
             </div>
         )
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="text-3xl font-bold">Create Scope Item</h1>
-                    <p className="text-gray-600 mt-1">
-                        {group ? `Add a new scope item to ${group.name}` : `Add a new scope item to ${project?.name}`}
-                    </p>
-                </div>
-                <button
-                    onClick={handleBack}
-                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded flex items-center"
-                >
-                    <ArrowLeft className="w-5 h-5 mr-2" />
-                    Cancel
-                </button>
+        <div className="container mx-auto py-6 max-w-4xl">
+            <div className="flex items-center mb-6">
+                <Button variant="ghost" size="sm" onClick={() => router.back()} className="mr-2">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                </Button>
+                <h1 className="text-2xl font-bold">
+                    Create Scope Item
+                    {group && <span className="text-muted-foreground ml-2">in {group.name}</span>}
+                </h1>
             </div>
 
-            {/* Error message */}
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 mb-4 rounded" role="alert">
-                    <p>{error}</p>
-                </div>
-            )}
-
-            {/* Form */}
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <div className="p-6">
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-4">
-                            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
-                                Name *
-                            </label>
-                            <input
-                                type="text"
-                                id="name"
+            <Card>
+                <CardHeader>
+                    <CardTitle>Scope Item Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <FormField
+                                control={form.control}
                                 name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                required
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter scope item name" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
 
-                        <div className="mb-4">
-                            <label htmlFor="description" className="block text-gray-700 text-sm font-bold mb-2">
-                                Description
-                            </label>
-                            <textarea
-                                id="description"
+                            <FormField
+                                control={form.control}
                                 name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                rows={4}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Description</FormLabel>
+                                        <FormControl>
+                                            <Textarea placeholder="Enter scope item description" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
 
-                        <div className="mb-4">
-                            <label htmlFor="category" className="block text-gray-700 text-sm font-bold mb-2">
-                                Category
-                            </label>
-                            <input
-                                type="text"
-                                id="category"
+                            <FormField
+                                control={form.control}
                                 name="category"
-                                value={formData.category}
-                                onChange={handleInputChange}
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Category</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter category" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
                             />
-                        </div>
 
-                        <div className="mb-4">
-                            <label htmlFor="progress" className="block text-gray-700 text-sm font-bold mb-2">
-                                Progress (%)
-                            </label>
-                            <input
-                                type="number"
-                                id="progress"
-                                name="progress"
-                                value={formData.progress}
-                                onChange={handleInputChange}
-                                min="0"
-                                max="100"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="flex items-center">
-                                <input
-                                    type="checkbox"
-                                    name="isCompleted"
-                                    checked={formData.isCompleted}
-                                    onChange={handleInputChange}
-                                    className="mr-2"
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="costEstimate"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Cost Estimate</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="0.00" {...field} value={field.value || ""} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                                <span className="text-gray-700 text-sm font-bold">Mark as completed</span>
-                            </label>
-                        </div>
 
-                        <div className="flex justify-end space-x-4 mt-6">
-                            <button
-                                type="button"
-                                onClick={handleBack}
-                                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={actionLoading || !formData.name.trim()}
-                                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 flex items-center"
-                            >
-                                <Save className="w-5 h-5 mr-2" />
-                                {actionLoading ? "Creating..." : "Create Scope Item"}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                                <FormField
+                                    control={form.control}
+                                    name="spendEstimate"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Spend Estimate</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="0.00" {...field} value={field.value || ""} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+
+                                <FormField
+                                    control={form.control}
+                                    name="durationEstimate"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Duration Estimate (days)</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="0" {...field} value={field.value || ""} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            <FormField
+                                control={form.control}
+                                name="progress"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Progress (%)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" min="0" max="100" placeholder="0" {...field} value={field.value || ""} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="isCompleted"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                        <FormControl>
+                                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                        </FormControl>
+                                        <div className="space-y-1 leading-none">
+                                            <FormLabel>Mark as completed</FormLabel>
+                                            <FormDescription>This will mark the scope item as completed.</FormDescription>
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="tags"
+                                render={() => (
+                                    <FormItem>
+                                        <FormLabel className="flex items-center">
+                                            <Tag className="h-4 w-4 mr-2" />
+                                            Tags
+                                        </FormLabel>
+                                        <div className="mt-2">
+                                            {availableTags.length > 0 ? (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {availableTags.map((tag) => (
+                                                        <Badge
+                                                            key={tag.id}
+                                                            variant={selectedTags.includes(tag.id) ? "default" : "outline"}
+                                                            className="cursor-pointer"
+                                                            style={{
+                                                                backgroundColor: selectedTags.includes(tag.id) ? tag.color || undefined : undefined,
+                                                                borderColor: tag.color || undefined,
+                                                            }}
+                                                            onClick={() => handleTagToggle(tag.id)}
+                                                        >
+                                                            {tag.name}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground">
+                                                    No tags available for this company. Create tags in the company settings.
+                                                </p>
+                                            )}
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <div className="flex justify-end">
+                                <Button type="submit" disabled={submitting || !client}>
+                                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Create Scope Item
+                                </Button>
+                            </div>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
         </div>
     )
 }
